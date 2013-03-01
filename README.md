@@ -26,16 +26,10 @@ with this special syntax:
       port => 20009,
     }
 
-You can also restrict access for only certain users:
-
-    class { "ssh::server":
-      allowed_users => ["uggedal", "manager"],
-    }
-
-You can use `ssh::user` to add an authorized ssh key to an existing user
+You can use `ssh::auth::key` to add an authorized ssh key to an existing user
 for effortless authentication with ssh:
 
-    ssh::user { "uggedal":
-      key => "a8a7dgf7ad8j13g",
-      comment => "uggedal.com",
+    ssh::auth::key { "someuser":
+      key => "deadBeefSomeRsaKey==",
+      comment => "usercomment",
     }

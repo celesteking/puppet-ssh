@@ -1,80 +1,104 @@
-# Package generated configuration file
-# See the sshd(8) manpage for details
+<%= scope.lookupvar('global::puppet_banner_sh') -%>
+<%- 
+	# var lookup shortcut
+	lvar = lambda do |name|
+		scope.lookupvar('ssh::server::' + name)
+	end
+	
+	# lookup for boolean var. Outputs yes or no.
+	lvarb = lambda do |name|
+		scope.function_var2bool([lvar[name]]) ? 'yes' : 'no'
+	end
+%>
 
-# What ports, IPs and protocols we listen for
-Port <%= port %>
-# Use these options to restrict which interfaces/protocols sshd will bind to
-#ListenAddress ::
-#ListenAddress 0.0.0.0
+# This is the sshd server system-wide configuration file.
+# See sshd_config(5) for more information.
 Protocol 2
-# HostKeys for protocol version 2
-HostKey /etc/ssh/ssh_host_rsa_key
-HostKey /etc/ssh/ssh_host_dsa_key
-#Privilege Separation is turned on for security
-UsePrivilegeSeparation yes
 
-# Lifetime and size of ephemeral version 1 server key
-KeyRegenerationInterval 3600
-ServerKeyBits 768
+AddressFamily <%= lvar['address_family'] %>
+
+Port <%= lvar['port'] %>
+<% (lvar['listen']).each do |addr| -%>
+ListenAddress <%= addr %>
+<% end -%>
+
+# HostKeys for protocol version 2
+<% (lvar['hostkey']).each do |opt| -%>
+HostKey <%= opt %>
+<% end -%>
 
 # Logging
 SyslogFacility AUTH
 LogLevel INFO
 
 # Authentication:
-LoginGraceTime 120
-PermitRootLogin no
-StrictModes yes
+LoginGraceTime <%= lvar['login_grace_time'] %>
 
-RSAAuthentication yes
-PubkeyAuthentication yes
-#AuthorizedKeysFile	%h/.ssh/authorized_keys
+PermitRootLogin <%= lvar['root_login'] %>
 
-# Don't read the user's ~/.rhosts and ~/.shosts files
-IgnoreRhosts yes
-# For this to work you will also need host keys in /etc/ssh_known_hosts
+StrictModes <%= lvarb['strict_modes'] %>
+MaxAuthTries 6
+#MaxSessions 10
+
+RSAAuthentication no
 RhostsRSAAuthentication no
-# similar for protocol version 2
 HostbasedAuthentication no
-# Uncomment if you don't trust ~/.ssh/known_hosts for RhostsRSAAuthentication
-#IgnoreUserKnownHosts yes
 
-# To enable empty passwords, change to yes (NOT RECOMMENDED)
+PubkeyAuthentication <%= lvarb['pubkey_auth'] %>
+#AuthorizedKeysFile     .ssh/authorized_keys
+
+# To disable tunneled clear text passwords, change to no here!
+PasswordAuthentication <%= lvarb['password_auth'] %>
 PermitEmptyPasswords no
 
-# Change to yes to enable challenge-response passwords (beware issues with
-# some PAM modules and threads)
-ChallengeResponseAuthentication no
-
-# Change to no to disable tunnelled clear text passwords
-PasswordAuthentication no
+# Change to no to disable s/key passwords
+ChallengeResponseAuthentication <%= lvarb['skey_auth'] %>
 
 # Kerberos options
-#KerberosAuthentication no
-#KerberosGetAFSToken no
+KerberosAuthentication no
 #KerberosOrLocalPasswd yes
 #KerberosTicketCleanup yes
+#KerberosGetAFSToken no
 
 # GSSAPI options
-#GSSAPIAuthentication no
+GSSAPIAuthentication no
 #GSSAPICleanupCredentials yes
 
-X11Forwarding no
-PrintMotd no
-PrintLastLog yes
-TCPKeepAlive yes
-#UseLogin no
-
-#MaxStartups 10:30:60
-#Banner /etc/issue.net
-
-# Allow client to pass locale environment variables
-AcceptEnv LANG LC_*
-
-Subsystem sftp /usr/lib/openssh/sftp-server
-
+# PAM?
 UsePAM yes
 
-<% if allowed_users.any? %>
-AllowUsers <%= allowed_users.join(" ") %>
-<% end %>
+<% agent_fw = lvar['agent_forwarding']
+	unless agent_fw.nil? or agent_fw == :undef
+-%>
+AllowAgentForwarding <%= lvarb['agent_forwarding'] %>
+<% end -%>
+
+AllowTcpForwarding <%= lvarb['tcp_forwarding'] %>
+
+GatewayPorts no
+
+X11Forwarding <%= lvarb['x11_forwarding'] %>
+#X11DisplayOffset 10
+#X11UseLocalhost yes
+
+UseDNS <%= lvarb['reverse_lookups'] %>
+
+TCPKeepAlive yes
+
+PrintMotd <%= lvarb['print_motd'] %>
+PrintLastLog <%= lvarb['print_lastlog'] %>
+
+UseLogin no
+UsePrivilegeSeparation yes
+
+#PermitUserEnvironment no
+<% if envlist = lvar['accept_env'] -%>
+AcceptEnv <%= envlist.join(' ') %>
+<% end -%>
+
+Banner <%= lvar['login_banner_path'] %>
+
+<% if lvarb['enable_sftp'] -%>
+Subsystem       sftp    <%= scope.lookupvar('sftp_path') %>
+<% end -%>
+
