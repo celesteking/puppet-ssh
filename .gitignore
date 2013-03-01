@@ -1,3 +1,6 @@
 
 /.project
 pkg/
+.svn/
+metadata.json
+*.swp
