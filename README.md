@@ -1,12 +1,8 @@
-[![Build Status](https://secure.travis-ci.org/attachmentgenie/puppet-module-ssh.png)](http://travis-ci.org/attachmentgenie/puppet-module-ssh)
 
 Puppet SSH Module
 =================
 
 Module for configuring ssh.
-
-Tested on Debian GNU/Linux 6.0 Squeeze and Ubuntu 10.4 LTS and 12.04 LTS with
-Puppet 2.6 and 2.7. Patches for other operating systems are welcome.
 
 Usage
 -----
